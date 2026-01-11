@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>每日签到 · 报平安</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+                   "Helvetica Neue", Helvetica, Arial;
+    }
+
+    body {
+      margin: 0;
+      background: #f7f8fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: #fff;
+      width: 90%;
+      max-width: 420px;
+      padding: 28px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+
+    .desc {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 24px;
+    }
+
+    .status {
+      font-size: 15px;
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    .time {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 28px;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      font-size: 18px;
+      border-radius: 12px;
+      border: none;
+      background: #07c160;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background: #9adfb8;
+      cursor: not-allowed;
+    }
+
+    .footer {
+      margin-top: 18px;
+      font-size: 12px;
+      color: #aaa;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>每日签到</h1>
+    <div class="desc">点一下，让关心你的人放心</div>
+
+    <div class="status" id="statusText">状态：未签到</div>
+    <div class="time" id="lastTime">上次签到：暂无</div>
+
+    <button id="checkinBtn">我今天还好</button>
+
+    <div class="footer">
+      微信内可直接使用 · 不记录位置
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "https://你的后端域名/api"; // ← 改这里
+    const userToken = localStorage.getItem("user_token") || "demo_token";
+
+    const statusText = document.getElementById("statusText");
+    const lastTime = document.getElementById("lastTime");
+    const btn = document.getElementById("checkinBtn");
+
+    // 微信环境检测
+    function isWeChat() {
+      return /micromessenger/i.test(navigator.userAgent);
+    }
+
+    if (isWeChat()) {
+      console.log("当前在微信内");
+    }
+
+    // 加载签到状态
+    async function loadStatus() {
+      try {
+        const res = await fetch(`${API_BASE}/status`, {
+          headers: { "Authorization": userToken }
+        });
+        const data = await res.json();
+
+        if (data.checked_in) {
+          statusText.innerText = "状态：已签到";
+          lastTime.innerText = "上次签到：" + data.last_time;
+          btn.disabled = true;
+          btn.innerText = "今天已签到";
+        }
+      } catch (e) {
+        console.warn("状态获取失败");
+      }
+    }
+
+    // 签到
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      btn.innerText = "签到中…";
+
+      try {
+        const res = await fetch(`${API_BASE}/checkin`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": userToken
+          }
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          statusText.innerText = "状态：已签到";
+          lastTime.innerText = "上次签到：" + data.time;
+          btn.innerText = "今天已签到";
+        } else {
+          throw new Error();
+        }
+      } catch (e) {
+        btn.disabled = false;
+        btn.innerText = "我今天还好";
+        alert("签到失败，请稍后再试");
+      }
+    });
+
+    loadStatus();
+  </script>
+</body>
+</html>
