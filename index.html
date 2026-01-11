@@ -95,7 +95,18 @@
 
   <script>
     const API_BASE = "https://你的后端域名/api"; // ← 改这里
-    const userToken = localStorage.getItem("user_token") || "demo_token";
+    // ✅【加在这里】
+    function getUserToken() {
+        let token = localStorage.getItem("user_token");
+        if (!token) {
+          token = crypto.randomUUID();
+          localStorage.setItem("user_token", token);
+        }
+        return token;
+    }
+
+    const userToken = getUserToken();
+      // ✅【到这里结束】
 
     const statusText = document.getElementById("statusText");
     const lastTime = document.getElementById("lastTime");
