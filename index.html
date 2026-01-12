@@ -11,7 +11,6 @@
       font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
                    "Helvetica Neue", Helvetica, Arial;
     }
-
     body {
       margin: 0;
       background: #f7f8fa;
@@ -20,7 +19,6 @@
       align-items: center;
       min-height: 100vh;
     }
-
     .card {
       background: #fff;
       width: 90%;
@@ -30,30 +28,10 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.08);
       text-align: center;
     }
-
-    h1 {
-      margin: 0 0 10px;
-      font-size: 22px;
-    }
-
-    .desc {
-      font-size: 14px;
-      color: #666;
-      margin-bottom: 24px;
-    }
-
-    .status {
-      font-size: 15px;
-      margin-bottom: 16px;
-      color: #333;
-    }
-
-    .time {
-      font-size: 13px;
-      color: #999;
-      margin-bottom: 28px;
-    }
-
+    h1 { margin: 0 0 10px; font-size: 22px; }
+    .desc { font-size: 14px; color: #666; margin-bottom: 24px; }
+    .status { font-size: 15px; margin-bottom: 16px; color: #333; }
+    .time { font-size: 13px; color: #999; margin-bottom: 28px; }
     button {
       width: 100%;
       padding: 16px;
@@ -64,12 +42,10 @@
       color: white;
       cursor: pointer;
     }
-
     button:disabled {
       background: #9adfb8;
       cursor: not-allowed;
     }
-
     .footer {
       margin-top: 18px;
       font-size: 12px;
@@ -88,49 +64,43 @@
 
     <button id="checkinBtn">我今天还好</button>
 
-    <div class="footer">
-      微信内可直接使用 · 不记录位置
-    </div>
+    <div class="footer">欢迎使用 · 不记录位置</div>
   </div>
 
   <script>
-    // 🔴 改成你的 Workers 域名
+    // ✅ 改成你的 Workers 地址
     const API_BASE = "https://alive-check-api.xt919666.workers.dev";
 
-    // ========= UID 生成（唯一身份） =========
-    function getUserToken() {
-      let token = localStorage.getItem("user_token");
-      if (!token) {
-        token = crypto.randomUUID();
-        localStorage.setItem("user_token", token);
+    // 生成 / 获取 uid
+    function getUID() {
+      let uid = localStorage.getItem("alive_uid");
+      if (!uid) {
+        uid = crypto.randomUUID();
+        localStorage.setItem("alive_uid", uid);
       }
-      return token;
+      return uid;
     }
-    const uid = getUserToken();
-    // =======================================
+
+    const uid = getUID();
 
     const statusText = document.getElementById("statusText");
     const lastTime = document.getElementById("lastTime");
     const btn = document.getElementById("checkinBtn");
 
-    // 加载签到状态
+    // 加载状态
     async function loadStatus() {
       try {
         const res = await fetch(`${API_BASE}/status?uid=${uid}`);
         const data = await res.json();
 
-        if (data.signed) {
+        if (data.checked) {
           statusText.innerText = "状态：已签到";
-          lastTime.innerText =
-            "上次签到：" + new Date(data.last).toLocaleString();
+          lastTime.innerText = "上次签到：" + data.date;
           btn.disabled = true;
           btn.innerText = "今天已签到";
-        } else {
-          statusText.innerText = "状态：未签到";
-          lastTime.innerText = "上次签到：暂无";
         }
       } catch (e) {
-        statusText.innerText = "状态：获取失败";
+        console.warn("状态获取失败", e);
       }
     }
 
@@ -142,21 +112,18 @@
       try {
         const res = await fetch(`${API_BASE}/checkin`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ uid })
         });
 
         const data = await res.json();
 
-        if (data.ok) {
+        if (data.success) {
           statusText.innerText = "状态：已签到";
-          lastTime.innerText =
-            "上次签到：" + new Date(data.time).toLocaleString();
+          lastTime.innerText = "上次签到：" + data.date;
           btn.innerText = "今天已签到";
         } else {
-          throw new Error();
+          throw new Error("fail");
         }
       } catch (e) {
         btn.disabled = false;
