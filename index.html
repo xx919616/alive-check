@@ -30,8 +30,9 @@
     }
     h1 { margin: 0 0 10px; font-size: 22px; }
     .desc { font-size: 14px; color: #666; margin-bottom: 24px; }
-    .status { font-size: 15px; margin-bottom: 16px; color: #333; }
-    .time { font-size: 13px; color: #999; margin-bottom: 28px; }
+    .status { font-size: 15px; margin-bottom: 12px; color: #333; }
+    .status.warn { color: #e64545; font-weight: 600; }
+    .time { font-size: 13px; color: #999; margin-bottom: 24px; }
     button {
       width: 100%;
       padding: 16px;
@@ -68,10 +69,10 @@
   </div>
 
   <script>
-    // ✅ 改成你的 Workers 地址
+    // ✅ Workers API
     const API_BASE = "https://alive-check-api.xt919666.workers.dev";
 
-    // 生成 / 获取 uid
+    // 获取 / 生成 uid
     function getUID() {
       let uid = localStorage.getItem("alive_uid");
       if (!uid) {
@@ -82,29 +83,43 @@
     }
 
     const uid = getUID();
-
     const statusText = document.getElementById("statusText");
     const lastTime = document.getElementById("lastTime");
     const btn = document.getElementById("checkinBtn");
 
-    // 加载状态
+    // ===== 加载状态 =====
     async function loadStatus() {
       try {
         const res = await fetch(`${API_BASE}/status?uid=${uid}`);
         const data = await res.json();
 
+        // 已签到
         if (data.checked) {
-          statusText.innerText = "状态：已签到";
+          statusText.innerText = `状态：已签到（连续 ${data.streak} 天）`;
           lastTime.innerText = "上次签到：" + data.date;
           btn.disabled = true;
           btn.innerText = "今天已签到";
+          return;
+        }
+
+        // 未签到但断签提醒
+        if (data.missed_days >= 3) {
+          statusText.classList.add("warn");
+
+          if (data.missed_days >= 7) {
+            statusText.innerText = `⚠️ 已 ${data.missed_days} 天未签到`;
+          } else {
+            statusText.innerText = `提醒：已 ${data.missed_days} 天未签到`;
+          }
+
+          lastTime.innerText = "上次签到：" + (data.last_time || "暂无");
         }
       } catch (e) {
         console.warn("状态获取失败", e);
       }
     }
 
-    // 签到
+    // ===== 签到 =====
     btn.addEventListener("click", async () => {
       btn.disabled = true;
       btn.innerText = "签到中…";
@@ -119,7 +134,8 @@
         const data = await res.json();
 
         if (data.success) {
-          statusText.innerText = "状态：已签到";
+          statusText.classList.remove("warn");
+          statusText.innerText = `状态：已签到（连续 ${data.streak} 天）`;
           lastTime.innerText = "上次签到：" + data.date;
           btn.innerText = "今天已签到";
         } else {
