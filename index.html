@@ -69,10 +69,8 @@
   </div>
 
   <script>
-    // ✅ Workers API
     const API_BASE = "https://alive-check-api.xt919666.workers.dev";
 
-    // 获取 / 生成 uid
     function getUID() {
       let uid = localStorage.getItem("alive_uid");
       if (!uid) {
@@ -83,17 +81,21 @@
     }
 
     const uid = getUID();
+
     const statusText = document.getElementById("statusText");
     const lastTime = document.getElementById("lastTime");
     const btn = document.getElementById("checkinBtn");
 
-    // ===== 加载状态 =====
+    // 🔒 默认锁按钮，防止误点
+    btn.disabled = true;
+    btn.innerText = "加载中…";
+
     async function loadStatus() {
       try {
         const res = await fetch(`${API_BASE}/status?uid=${uid}`);
         const data = await res.json();
 
-        // 已签到
+        // ===== 已签到 =====
         if (data.checked) {
           statusText.innerText = `状态：已签到（连续 ${data.streak} 天）`;
           lastTime.innerText = "上次签到：" + data.date;
@@ -102,7 +104,10 @@
           return;
         }
 
-        // 未签到但断签提醒
+        // ===== 未签到 =====
+        btn.disabled = false;
+        btn.innerText = "我今天还好";
+
         if (data.missed_days >= 3) {
           statusText.classList.add("warn");
 
@@ -113,13 +118,17 @@
           }
 
           lastTime.innerText = "上次签到：" + (data.last_time || "暂无");
+        } else {
+          statusText.innerText = "状态：未签到";
+          lastTime.innerText = "上次签到：" + (data.last_time || "暂无");
         }
       } catch (e) {
+        btn.disabled = false;
+        btn.innerText = "我今天还好";
         console.warn("状态获取失败", e);
       }
     }
 
-    // ===== 签到 =====
     btn.addEventListener("click", async () => {
       btn.disabled = true;
       btn.innerText = "签到中…";
@@ -139,7 +148,7 @@
           lastTime.innerText = "上次签到：" + data.date;
           btn.innerText = "今天已签到";
         } else {
-          throw new Error("fail");
+          throw new Error();
         }
       } catch (e) {
         btn.disabled = false;
