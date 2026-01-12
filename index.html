@@ -94,49 +94,43 @@
   </div>
 
   <script>
-    const API_BASE = "https://你的后端域名/api"; // ← 改这里
-    // ✅【加在这里】
-    function getUserToken() {
-        let token = localStorage.getItem("user_token");
-        if (!token) {
-          token = crypto.randomUUID();
-          localStorage.setItem("user_token", token);
-        }
-        return token;
-    }
+    // 🔴 改成你的 Workers 域名
+    const API_BASE = "https://alive-check-api.xt919666.workers.dev";
 
-    const userToken = getUserToken();
-      // ✅【到这里结束】
+    // ========= UID 生成（唯一身份） =========
+    function getUserToken() {
+      let token = localStorage.getItem("user_token");
+      if (!token) {
+        token = crypto.randomUUID();
+        localStorage.setItem("user_token", token);
+      }
+      return token;
+    }
+    const uid = getUserToken();
+    // =======================================
 
     const statusText = document.getElementById("statusText");
     const lastTime = document.getElementById("lastTime");
     const btn = document.getElementById("checkinBtn");
 
-    // 微信环境检测
-    function isWeChat() {
-      return /micromessenger/i.test(navigator.userAgent);
-    }
-
-    if (isWeChat()) {
-      console.log("当前在微信内");
-    }
-
     // 加载签到状态
     async function loadStatus() {
       try {
-        const res = await fetch(`${API_BASE}/status`, {
-          headers: { "Authorization": userToken }
-        });
+        const res = await fetch(`${API_BASE}/status?uid=${uid}`);
         const data = await res.json();
 
-        if (data.checked_in) {
+        if (data.signed) {
           statusText.innerText = "状态：已签到";
-          lastTime.innerText = "上次签到：" + data.last_time;
+          lastTime.innerText =
+            "上次签到：" + new Date(data.last).toLocaleString();
           btn.disabled = true;
           btn.innerText = "今天已签到";
+        } else {
+          statusText.innerText = "状态：未签到";
+          lastTime.innerText = "上次签到：暂无";
         }
       } catch (e) {
-        console.warn("状态获取失败");
+        statusText.innerText = "状态：获取失败";
       }
     }
 
@@ -149,16 +143,17 @@
         const res = await fetch(`${API_BASE}/checkin`, {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            "Authorization": userToken
-          }
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ uid })
         });
 
         const data = await res.json();
 
-        if (data.success) {
+        if (data.ok) {
           statusText.innerText = "状态：已签到";
-          lastTime.innerText = "上次签到：" + data.time;
+          lastTime.innerText =
+            "上次签到：" + new Date(data.time).toLocaleString();
           btn.innerText = "今天已签到";
         } else {
           throw new Error();
