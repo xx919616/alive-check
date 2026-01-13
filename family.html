@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>家属查看 · 状态</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      background: #f7f8fa;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC";
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: #fff;
+      padding: 28px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 380px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+    .status {
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+    .warn {
+      color: #e64545;
+      font-weight: 600;
+    }
+    .ok {
+      color: #07c160;
+      font-weight: 600;
+    }
+    .time {
+      font-size: 13px;
+      color: #777;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>状态查看</h1>
+    <div class="status" id="status">加载中…</div>
+    <div class="time" id="time"></div>
+  </div>
+
+  <script>
+    const API_BASE = "https://alive-check-api.xt919666.workers.dev";
+    const params = new URLSearchParams(location.search);
+    const key = params.get("key");
+
+    const statusEl = document.getElementById("status");
+    const timeEl = document.getElementById("time");
+
+    async function load() {
+      if (!key) {
+        statusEl.innerText = "无效链接";
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/family-status?key=${key}`);
+        const data = await res.json();
+
+        if (data.checked) {
+          statusEl.innerText = `✅ 今日已签到（连续 ${data.streak} 天）`;
+          statusEl.className = "status ok";
+        } else if (data.missed_days >= 3) {
+          statusEl.innerText = `⚠️ 已 ${data.missed_days} 天未签到`;
+          statusEl.className = "status warn";
+        } else {
+          statusEl.innerText = "今日未签到";
+        }
+
+        timeEl.innerText = "上次签到：" + (data.last_time || "暂无");
+      } catch (e) {
+        statusEl.innerText = "加载失败";
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
